@@ -2,7 +2,7 @@
 title: "Practical Machine Learning Course Project"
 author: "Ahmed"
 date: "April 10, 2016"
-output: html_document
+output: word_document
 ---
 Background
 
