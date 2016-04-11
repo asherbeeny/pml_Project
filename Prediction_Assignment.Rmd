@@ -109,9 +109,7 @@ confusionMatrix(valid_predict2, validation$classe)
 ```{r}
 ImportantVar <- train(classe ~ ., data = training, method = "rf")
 ImportantVarObj <- varImp(ImportantVar)
-plot(ImportantVarObj, main = "Importance of Top 40 Variables", top = 15)
-predictfinal <- predict(model2, testingset, type="class")
-predictfinal
+plot(ImportantVarObj, main = "Importance of Top 15 Variables", top = 15)
 ```
 
 
