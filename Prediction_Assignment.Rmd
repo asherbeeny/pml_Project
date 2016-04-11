@@ -105,17 +105,10 @@ valid_predict2 <- predict(modelfit2, newdata=validation)
 confusionMatrix(valid_predict2, validation$classe)
 ```
 
-### Identify the important variables 
-```{r}
-ImportantVar <- train(classe ~ ., data = training, method = "rf")
-ImportantVarObj <- varImp(ImportantVar)
-plot(ImportantVarObj, main = "Importance of Top 15 Variables", top = 15)
-```
-
 
 ### Apply the agorithm on the testing set 20 records to predict the outcome level
 ```{r}
-predicttest <- predict(modelfit2, pml_test, type="class")
+predicttest <- predict(modelfit2, newdata=pml_test)
 predicttest
 ```
 
