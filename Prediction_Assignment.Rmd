@@ -1,0 +1,134 @@
+---
+title: "Practical Machine Learning Course Project"
+author: "Ahmed"
+date: "April 10, 2016"
+output: html_document
+---
+Background
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+Data
+
+The training data for this project are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv
+
+The test data are available here:
+
+https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv
+
+
+The data for this project come from this source: http://groupware.les.inf.puc-rio.br/har. If you use the document you create for this class for any purpose please cite them as they have been very generous in allowing their data to be used for this kind of assignment.
+
+
+# Solution
+### Load the needed libraries
+we will load the needed libraries for the project
+```{r}
+library (rpart)
+library(ggplot2)
+library (caret)
+library(rpart.plot) 
+```
+
+### Download & Load the data training and testing
+
+```{r}
+download.file(url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", destfile = "Data/pml-training.csv")
+download.file(url = "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", destfile = "Data/pml-testing.csv")
+pml_train <- read.csv('Data/pml-training.csv', na.strings=c("NA","#DIV/0!", ""))
+pml_test <- read.csv('Data/pml-testing.csv' , na.strings=c("NA","#DIV/0!", ""))
+```
+### Quick Exploration
+```{r}
+dim(pml_train)
+dim(pml_test)
+```
+
+
+### Data Munging ( cleansing and preparation)
+remove features that have only one unique value or have few unique values relative to the number of samples using nearZeroVar function. Also,remove columns that doesn't have any effect on output. Remove columns with missing values. 
+
+```{r}
+bad_Columns <- nearZeroVar(pml_train, saveMetrics = TRUE)
+pml_train <- pml_train[, bad_Columns$nzv==FALSE]
+pml_test <- pml_test[, bad_Columns$nzv==FALSE]
+dim(pml_train)
+unnecessary_cols <- c("user_name", "raw_timestamp_part_1","raw_timestamp_part_2", "cvtd_timestamp")
+for (col in unnecessary_cols) {
+  pml_train[, col] <- NULL
+  pml_test[, col] <- NULL
+}
+dim(pml_train)
+pml_train<-pml_train[,colSums(is.na(pml_train)) == 0]
+pml_test <-pml_test[,colSums(is.na(pml_test)) == 0]
+pml_train$X <- NULL
+pml_test$X <- NULL
+dim(pml_train)
+```
+
+### Prepare data for model
+Partition training data into 2 partitions , 75% training and 25% validation
+
+```{r}
+set.seed(234334)
+inTrain <- createDataPartition(y=pml_train$classe, p=0.75, list=FALSE)
+training <- pml_train[inTrain, ] 
+validation <- pml_train[-inTrain, ]
+dim(training)
+dim(validation)
+```
+### Create the first model
+Use Decision trees to build the first model,and test the result against the validation set
+
+
+```{r}
+modelfit1 <- rpart(classe ~ ., data=training, method="class")
+valid_predict1 <- predict(modelfit1, validation, type = "class")
+
+rpart.plot(modelfit1)
+confusionMatrix(valid_predict1, validation$classe)
+```
+
+
+### Create the second model
+Use random forest to build the second model, and test the result against the validation set
+
+```{r}
+
+modelcontrol <- trainControl(method="cv", number=3, verboseIter=FALSE)
+modelfit2 <- train(classe ~ ., data=training, method="rf",
+                          trControl=modelcontrol)
+modelfit2$finalModel
+valid_predict2 <- predict(modelfit2, newdata=validation)
+confusionMatrix(valid_predict2, validation$classe)
+```
+
+### Identify the important variables 
+```{r}
+ImportantVar <- train(classe ~ ., data = training, method = "rf")
+ImportantVarObj <- varImp(ImportantVar)
+plot(ImportantVarObj, main = "Importance of Top 40 Variables", top = 15)
+predictfinal <- predict(model2, testingset, type="class")
+predictfinal
+```
+
+
+### Apply the agorithm on the testing set 20 records to predict the outcome level
+```{r}
+predicttest <- predict(modelfit2, pml_test, type="class")
+predicttest
+```
+
+## Conclusion
+Decision
+
+Random Forest algorithm performed better than Decision Trees.
+Prediction evaluations were based on maximizing the accuracy and minimizing the out-of-sample error. after cleaning the data and removing the unrelated, unrelated columns, both models were tested and found the model with best accuracy and apply it on the testing data.
+
+##References
+Ugulino, W.; Cardador, D.; Vega, K.; Velloso, E.; Milidiu, R.; Fuks, H. Wearable Computing: Accelerometers' Data Classification of Body Postures and Movements. Proceedings of 21st Brazilian Symposium on Artificial Intelligence. Advances in Artificial Intelligence - SBIA 2012. In: Lecture Notes in Computer Science. , pp. 52-61. Curitiba, PR: Springer Berlin / Heidelberg, 2012. ISBN 978-3-642-34458-9. DOI: 10.1007/978-3-642-34459-6_6. 
+Cited by 2 (Google Scholar)
+
+Read more: http://groupware.les.inf.puc-rio.br/har#ixzz45UOuBobE
